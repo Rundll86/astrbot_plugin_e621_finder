@@ -9,6 +9,6 @@
         "description": "Base URL",
         "hint": "接口的基础URL地址。",
         "type": "string",
-        "default": "https://e621.net"
+        "default": "https://e621.net/random/posts.json"
     }
 }
