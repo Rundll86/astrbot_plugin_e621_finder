@@ -1,4 +1,4 @@
-name: astrbot-e621-finder
+name: astrbot_plugin_e621_finder
 version: v1.0.0
 display_name: Furry随机图
 desc: 从e621获取随机图，支持NSFW内容！！！请谨慎使用。
