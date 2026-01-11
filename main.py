@@ -4,8 +4,15 @@ from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star, register
 
-from constants import RATING_LEVEL
-from utils import compose_rating_map, filter_empty_string, format_post, merge_params
+from .constants import RATING_LEVEL
+from .utils import (
+    compose_rating_map,
+    filter_empty_string,
+    format_post,
+    merge_params,
+    read_group_data,
+    write_group_data,
+)
 
 
 @register("Random Post", "陨落基围虾", "随机获取某插画网站上的图片", "1.0.0")
@@ -13,9 +20,6 @@ class RandomPostPlugin(Star):
     CONSTANT_TAGS: list[str] = []
     USER_AGENT: str = ""
     BASE_URL: str = ""
-
-    current_rating: str = "s"
-    user_constant_tags: list[str] = ["male"]
 
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
@@ -74,22 +78,22 @@ class RandomPostPlugin(Star):
         new_rating: str = "all",
     ):
         if new_rating in ["s", "q", "e", "all"]:
-            self.current_rating = new_rating
+            self.set_current_rating(event.get_group_id(), new_rating)
             if new_rating == "all":
                 yield event.plain_result("已取消分级限制。")
             else:
-                yield event.plain_result(
-                    f"分级已设置为：{RATING_LEVEL[self.current_rating]}"
-                )
+                yield event.plain_result(f"分级已设置为：{RATING_LEVEL[new_rating]}")
         else:
             yield event.plain_result("无效分级标签。")
 
-    @rating.command("get", desc="查看当前分级")
+    @rating.command("look", desc="查看当前分级")
     def look_rating(self, event: AstrMessageEvent):
-        if self.current_rating == "all":
+        if self.get_current_rating(event.get_group_id()) == "all":
             yield event.plain_result("当前无分级限制。")
         else:
-            yield event.plain_result(f"当前分级为：{RATING_LEVEL[self.current_rating]}")
+            yield event.plain_result(
+                f"当前分级为：{RATING_LEVEL[self.get_current_rating(event.get_group_id())]}"
+            )
 
     @filter.llm_tool("search_random_image")
     async def get_random_image(self, event: AstrMessageEvent, tags: list[str]):
@@ -117,38 +121,44 @@ class RandomPostPlugin(Star):
 
     @constants.command("add", alias={"+"}, desc="添加恒标签")
     async def add_constants(self, event: AstrMessageEvent, tag: str):
-        if self.user_constant_tags.count(tag) > 0:
+        current = self.get_user_constant_tags(event.get_group_id())
+        if current.count(tag) > 0:
             yield event.plain_result("这个恒标签已存在。")
         else:
-            self.user_constant_tags.append(tag)
+            current.append(tag)
+            self.set_user_constant_tags(event.get_group_id(), current)
             yield event.plain_result("恒标签添加成功！")
 
     @constants.command("delete", alias={"-"}, desc="删除恒标签")
     async def delete_constants(self, event: AstrMessageEvent, tag: str):
-        if self.user_constant_tags.count(tag) == 0:
+        current = self.get_user_constant_tags(event.get_group_id())
+        if current.count(tag) == 0:
             yield event.plain_result("这个恒标签根本不存在。")
         else:
-            self.user_constant_tags.remove(tag)
+            current.remove(tag)
+            self.set_user_constant_tags(event.get_group_id(), current)
             yield event.plain_result("恒标签删除成功！")
 
     @constants.command("replace", alias={"="}, desc="替换恒标签（删除+添加）")
     async def replace_constants(
         self, event: AstrMessageEvent, old_tag: str, new_tag: str
     ):
-        if self.user_constant_tags.count(old_tag) == 0:
+        current = self.get_user_constant_tags(event.get_group_id())
+        if current.count(old_tag) == 0:
             yield event.plain_result(f"目标恒标签{old_tag}根本不存在。")
             return
-        if self.user_constant_tags.count(new_tag) > 0:
+        if current.count(new_tag) > 0:
             yield event.plain_result(f"新的恒标签{new_tag}已存在。")
             return
-        index = self.user_constant_tags.index(old_tag)
-        self.user_constant_tags.remove(old_tag)
-        self.user_constant_tags.insert(index, new_tag)
+        index = current.index(old_tag)
+        current.remove(old_tag)
+        current.insert(index, new_tag)
+        self.set_user_constant_tags(event.get_group_id(), current)
         yield event.plain_result(f"替换成功：{old_tag}->{new_tag}")
 
     @constants.command("get", alias={"?"}, desc="查看当前恒标签列表")
     async def get_constants(self, event: AstrMessageEvent):
-        result = ",".join(self.user_constant_tags)
+        result = ",".join(self.get_user_constant_tags(event.get_group_id()))
         yield event.plain_result(result if result else "当前没有任何恒标签。")
 
     async def fetch_post(self, tags: str) -> dict | None:
@@ -182,13 +192,25 @@ class RandomPostPlugin(Star):
             + self.CONSTANT_TAGS
             + (
                 []
-                if self.current_rating == "all"
-                else [f"rating:{self.current_rating}"]
+                if self.get_current_rating == "all"
+                else [f"rating:{self.get_current_rating}"]
             )
         )
 
     def get_api_url(self, tags: str):
         return merge_params(self.BASE_URL, {"tags": tags})
+
+    def get_user_constant_tags(self, group: str) -> list[str]:
+        return read_group_data(group)["constants"]
+
+    def set_user_constant_tags(self, group: str, new_constants: list[str]):
+        return write_group_data(group, "constants", new_constants)
+
+    def get_current_rating(self, group: str):
+        return read_group_data(group)["rating"]
+
+    def set_current_rating(self, group: str, new_rating: str):
+        return write_group_data(group, "rating", new_rating)
 
     async def terminate(self):
         await self.client.aclose()
