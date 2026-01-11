@@ -4,5 +4,11 @@
         "hint": "UA字符串，如果出现访问不了就填，留空保持默认。",
         "type": "string",
         "default": ""
+    },
+    "base_url": {
+        "description": "Base URL",
+        "hint": "接口的基础URL地址。",
+        "type": "string",
+        "default": "https://e621.net"
     }
 }
