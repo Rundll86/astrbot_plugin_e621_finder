@@ -1,4 +1,6 @@
 name: astrbot-e621-finder
-desc: 在 e621 搜索随机图片。
+version: v1.0.0
+display_name: Furry随机图
+desc: 从e621获取随机图，支持NSFW内容！！！请谨慎使用。
 author: 陨落基围虾
-version: 1.0.0
+repo: https://github.com/Rundll86/astrbot_plugin_e621_finder
