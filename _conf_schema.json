@@ -1,0 +1,8 @@
+{
+    "user_agent": {
+        "description": "User-Agent",
+        "hint": "UA字符串，如果出现访问不了就填，留空保持默认。",
+        "type": "string",
+        "default": ""
+    }
+}
