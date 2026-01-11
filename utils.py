@@ -4,6 +4,7 @@ from typing import TypeVar
 
 import astrbot.api.message_components as Comp
 import httpx
+from sympy import true
 
 from .constants import INITIAL_GROUP_DATA, PLUGIN_DATA_PATH, RATING_LEVEL
 
@@ -39,6 +40,10 @@ def compose_rating_map(separator: str = ",\n"):
             RATING_LEVEL,
         )
     )
+
+
+def create_data_path():
+    os.makedirs(PLUGIN_DATA_PATH, exist_ok=true)
 
 
 def get_group_data_path(group: str) -> str:

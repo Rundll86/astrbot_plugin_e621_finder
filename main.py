@@ -7,6 +7,7 @@ from astrbot.api.star import Context, Star, register
 from .constants import RATING_LEVEL
 from .utils import (
     compose_rating_map,
+    create_data_path,
     filter_empty_string,
     format_post,
     merge_params,
@@ -28,6 +29,7 @@ class RandomPostPlugin(Star):
         self.client = httpx.AsyncClient()
         self.USER_AGENT = config["user_agent"]
         self.BASE_URL = config["base_url"]
+        create_data_path()
 
     @filter.command(
         "random-image",
