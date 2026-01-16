@@ -2,6 +2,7 @@ from urllib.parse import urljoin
 
 import httpx
 
+from astrbot.api import message_components as Comp
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star
 
@@ -30,6 +31,7 @@ class RandomPostPlugin(Star):
         self.BASE_URL = config["base_url"]
         self.TAG_SEPARATOR = config["tag_separator"]
 
+    # region 命令&LLM工具
     @filter.command(
         "random-image",
         alias={
@@ -46,15 +48,11 @@ class RandomPostPlugin(Star):
     )
     async def command_random_post(self, event: AstrMessageEvent, tags: str):
         yield self.tip_fetching_image(event, tags)
-        try:
-            post = await self.fetch_random_post(
-                self.format_tags(tags, event.get_group_id())
-            )
-        except httpx.RequestError:
-            yield event.plain_result("无法请求API，可能是服务端网络问题。")
-            return
-        if not post:
-            yield event.plain_result("没有任何帖子符合该标签！")
+        post = await self.fetch_random_post(
+            self.format_tags(tags, event.get_group_id())
+        )
+        if isinstance(post, Exception):
+            yield event.plain_result(str(post))
             return
         url = post.get("file_url")
         if not url:
@@ -66,6 +64,23 @@ class RandomPostPlugin(Star):
     async def command_fetch_post(self, event: AstrMessageEvent, id: int):
         pass
 
+    @filter.llm_tool("search_random_image")
+    async def get_random_image(self, event: AstrMessageEvent, tags: list[str]):
+        """搜索或获取随机图
+
+        Args:
+            tags(array[string]): The label content of the random graph must consist of all-English keywords. If it is a anime character name, use the official translation.
+        """
+        post = await self.fetch_random_post(
+            self.format_tags(self.TAG_SEPARATOR.join(tags), event.get_group_id())
+        )
+        if isinstance(post, Exception):
+            await event.send(MessageChain(chain=[Comp.Plain(str(post))]))
+            return str(post)
+        else:
+            return f"帖子数据：{post}"
+
+    # region 分级
     @filter.command_group("rating", desc="分级相关指令")
     def rating(self):
         pass
@@ -103,22 +118,7 @@ class RandomPostPlugin(Star):
         self.set_current_rating(event.get_group_id(), "all")
         yield event.plain_result("已取消分级限制。")
 
-    @filter.llm_tool("search_random_image")
-    async def get_random_image(self, event: AstrMessageEvent, tags: list[str]):
-        """搜索或获取随机图
-
-        Args:
-            tags(array[string]): The label content of the random graph must consist of all-English keywords. If it is a anime character name, use the official translation.
-        """
-        post = await self.fetch_random_post(
-            self.format_tags(self.TAG_SEPARATOR.join(tags), event.get_group_id())
-        )
-        if post:
-            await event.send(MessageChain(chain=format_post(post)))
-            return f"帖子数据：{post}"
-        else:
-            return "没有任何帖子符合你所给的标签。"
-
+    # region 恒标签
     @filter.command_group("constants", desc="恒标签相关指令")
     async def constants(self):
         pass
@@ -172,27 +172,39 @@ class RandomPostPlugin(Star):
             f"正在获取随机图：{self.get_url_random_post(self.format_tags(tags, event.get_group_id()))}"
         )
 
-    async def fetch_api(self, url: str):
-        response = await self.client.get(
-            url,
-            headers={
-                "User-Agent": (
-                    self.USER_AGENT if self.USER_AGENT else "RandomPostPlugin/1.0"
+    # region 请求&URL合成
+    async def fetch_api(self, url: str) -> dict | Exception:
+        try:
+            response = await self.client.get(
+                url,
+                headers={
+                    "User-Agent": (
+                        self.USER_AGENT if self.USER_AGENT else "RandomPostPlugin/1.0"
+                    )
+                },
+            )
+            if (
+                response.status_code == 200
+                and response.headers["Content-Type"] == "application/json"
+            ):
+                data: dict = response.json()
+                if data.get("success", True):
+                    return data
+                else:
+                    raise ValueError("未搜索到任何帖子。")
+            else:
+                raise ValueError(
+                    f"请求失败，来自API的响应无效，状态码：{response.status_code}"
                 )
-            },
-        )
-        if (
-            response.status_code == 200
-            and response.headers["Content-Type"] == "application/json"
-        ):
-            data: dict = response.json()
-            if data.get("success", True):
-                return data
+        except httpx.RequestError:
+            return Exception("请求失败，服务端网络问题。")
+        except ValueError as e:
+            return e
 
     def get_url_random_post(self, tags: str):
         return self.join_api("posts/random.json", {"tags": tags})
 
-    async def fetch_random_post(self, tags: str) -> dict | None:
+    async def fetch_random_post(self, tags: str):
         return await self.fetch_api(self.get_url_random_post(tags))
 
     def get_url_exact_post(self, id: int):
