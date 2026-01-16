@@ -1,9 +1,11 @@
 import json
 import os
 from typing import TypeVar
+from urllib.parse import unquote
+
+import httpx
 
 import astrbot.api.message_components as Comp
-import httpx
 
 from .constants import INITIAL_GROUP_DATA, PLUGIN_DATA_PATH, RATING_LEVEL
 
@@ -25,7 +27,7 @@ def format_post(post: dict):
 
 
 def merge_params(url: str, params: dict):
-    return httpx.Request("GET", url, params=params).url
+    return unquote(str(httpx.Request("GET", url, params=params).url))
 
 
 def filter_empty_string(array: list[T]) -> list[T]:
