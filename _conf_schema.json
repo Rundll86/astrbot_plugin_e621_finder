@@ -9,7 +9,7 @@
         "description": "Base URL",
         "hint": "接口的基础URL地址。",
         "type": "string",
-        "default": "https://e621.net/random/posts.json"
+        "default": "https://e621.net/posts/random.json"
     },
     "tag_separator": {
         "description": "关键词分隔符",
