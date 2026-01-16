@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from typing import TypeVar
 from urllib.parse import unquote
 
@@ -17,12 +18,11 @@ def format_tags(tags: list[str]):
     return "+".join([x.replace(" ", "_") for x in tags])
 
 
-def format_post(post: dict):
+def format_post(post: dict, template: str) -> list[Comp.BaseMessageComponent]:
+    file_url = post.get("file_url")
     return [
-        Comp.Image.fromURL(post["file_url"]),
-        Comp.Plain(
-            f"#{post['id']} [❤️{post['score']} ⭐{post['fav_count']} 📻{post['comment_count']}]（{RATING_LEVEL[post['rating']]}）\n\n{post['description']}"
-        ),
+        Comp.Image.fromURL(file_url) if file_url else Comp.Plain("[此帖子不带图]\n"),
+        Comp.Plain(render_template(template, post)),
     ]
 
 
@@ -61,3 +61,23 @@ def write_group_data(group: str, key: str, value: object) -> dict:
     data[key] = value
     json.dump(data, open_group_file(group, "w"), ensure_ascii=False)
     return data
+
+
+def render_template(template: str, data: dict) -> str:
+    def replace_match(match: re.Match[str]):
+        path_str = match.group(1)
+        keys = path_str.split(".")
+        current = data
+        try:
+            for key in keys:
+                if isinstance(current, dict):
+                    current = current[key]
+                elif isinstance(current, list):
+                    current = current[int(key)]
+                else:
+                    return match.group(0)
+            return str(current)
+        except (KeyError, IndexError, ValueError, TypeError):
+            return match.group(0)
+
+    return re.compile(r"\{([^{}]+)\}").sub(replace_match, template)

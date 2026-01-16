@@ -23,6 +23,7 @@ class RandomPostPlugin(Star):
     USER_AGENT: str = ""
     BASE_URL: str = ""
     TAG_SEPARATOR: str = ""
+    POST_TEMPLATE: str = ""
 
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
@@ -30,6 +31,7 @@ class RandomPostPlugin(Star):
         self.USER_AGENT = config["user_agent"]
         self.BASE_URL = config["base_url"]
         self.TAG_SEPARATOR = config["tag_separator"]
+        self.POST_TEMPLATE = config["post_template"]
 
     # region 命令&LLM工具
     @filter.command(
@@ -47,22 +49,23 @@ class RandomPostPlugin(Star):
         desc="从某插画网站获取一张随机图",
     )
     async def command_random_post(self, event: AstrMessageEvent, tags: str):
-        yield self.tip_fetching_image(event, tags)
+        yield self.tip_fetching_random_image(event, tags)
         post = await self.fetch_random_post(
             self.format_tags(tags, event.get_group_id())
         )
         if isinstance(post, Exception):
             yield event.plain_result(str(post))
-            return
-        url = post.get("file_url")
-        if not url:
-            yield event.plain_result("你的运气太好了，搜到的帖子刚好没带图。")
-            return
-        yield event.chain_result(format_post(post))
+        else:
+            yield event.chain_result(format_post(post, self.POST_TEMPLATE))
 
     @filter.command("fetch-post", alias={"fetch", "post", "get", "查看", "view"})
     async def command_fetch_post(self, event: AstrMessageEvent, id: int):
-        pass
+        yield self.tip_fetching_exact_image(event, id)
+        post = await self.fetch_post_by_id(id)
+        if isinstance(post, Exception):
+            yield event.plain_result(str(post))
+        else:
+            yield event.chain_result(format_post(post, self.POST_TEMPLATE))
 
     @filter.llm_tool("search_random_image")
     async def get_random_image(self, event: AstrMessageEvent, tags: list[str]):
@@ -167,10 +170,13 @@ class RandomPostPlugin(Star):
         )
         yield event.plain_result(result if result else "当前没有任何恒标签。")
 
-    def tip_fetching_image(self, event: AstrMessageEvent, tags: str):
+    def tip_fetching_random_image(self, event: AstrMessageEvent, tags: str):
         return event.plain_result(
             f"正在获取随机图：{self.get_url_random_post(self.format_tags(tags, event.get_group_id()))}"
         )
+
+    def tip_fetching_exact_image(self, event: AstrMessageEvent, id: int):
+        return event.plain_result(f"正在获取帖子#{id}：{self.get_url_exact_post(id)}")
 
     # region 请求&URL合成
     async def fetch_api(self, url: str) -> dict | Exception:
