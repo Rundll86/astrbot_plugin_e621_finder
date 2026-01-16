@@ -40,22 +40,19 @@ def compose_rating_map(separator: str = ",\n"):
     )
 
 
-def create_data_path():
-    os.makedirs(PLUGIN_DATA_PATH, exist_ok=True)
-
-
 def get_group_data_path(group: str) -> str:
     return os.path.join(PLUGIN_DATA_PATH, f"{group}.json")
 
 
 def open_group_file(group: str, mode: str):
-    return open(get_group_data_path(group), mode, encoding="utf8")
+    with open(get_group_data_path(group), mode, encoding="utf8") as file:
+        return file
 
 
 def read_group_data(group: str) -> dict:
     path = get_group_data_path(group)
     if not os.path.exists(path):
-        json.dump(INITIAL_GROUP_DATA, open_group_file(group, "w"), ensure_ascii=False)
+        return INITIAL_GROUP_DATA  # 路径不存在的话就说明这个群第一次存取数据，肯定是写，直接返回默认值
     return json.load(open_group_file(group, "r"))
 
 

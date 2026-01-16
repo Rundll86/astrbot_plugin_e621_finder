@@ -8,7 +8,6 @@ from astrbot.api.star import Context, Star, register
 from .constants import RATING_LEVEL
 from .utils import (
     compose_rating_map,
-    create_data_path,
     filter_empty_string,
     format_post,
     merge_params,
@@ -31,7 +30,6 @@ class RandomPostPlugin(Star):
         self.USER_AGENT = config["user_agent"]
         self.BASE_URL = config["base_url"]
         self.TAG_SEPARATOR = config["tag_separator"]
-        create_data_path()
 
     @filter.command(
         "random-image",
@@ -55,7 +53,9 @@ class RandomPostPlugin(Star):
             f"正在获取随机图：{self.get_api_url(self.format_tags(tags, event.get_group_id()))}"
         )
         try:
-            post = await self.fetch_post(self.format_tags(tags, event.get_group_id()))
+            post = await self.fetch_random_post(
+                self.format_tags(tags, event.get_group_id())
+            )
         except httpx.RequestError:
             yield event.plain_result("无法请求API，可能是服务端网络问题。")
             return
@@ -66,7 +66,6 @@ class RandomPostPlugin(Star):
         if not url:
             yield event.plain_result("你的运气太好了，搜到的帖子刚好没带图。")
             return
-        logger.info(post)
         yield event.chain_result(format_post(post))
 
     @filter.command_group("rating", desc="分级相关指令")
@@ -116,7 +115,7 @@ class RandomPostPlugin(Star):
         tagsProcessed = self.format_tags(
             self.TAG_SEPARATOR.join(tags), event.get_group_id()
         )
-        post = await self.fetch_post(tagsProcessed)
+        post = await self.fetch_random_post(tagsProcessed)
         await event.send(
             MessageChain(chain=[Comp.Plain(f"正在使用标签搜索随机图：{tagsProcessed}")])
         )
@@ -174,9 +173,8 @@ class RandomPostPlugin(Star):
         )
         yield event.plain_result(result if result else "当前没有任何恒标签。")
 
-    async def fetch_post(self, tags: str) -> dict | None:
+    async def fetch_random_post(self, tags: str) -> dict | None:
         url = self.get_api_url(tags)
-        logger.info(url)
         response = await self.client.get(
             url,
             headers={
@@ -185,11 +183,10 @@ class RandomPostPlugin(Star):
                 )
             },
         )
-        data: dict = response.json()
-        if data.get("success", True):
-            return data
-        else:
-            return None
+        if response.status_code == 200:
+            data: dict = response.json()
+            if data.get("success", True):
+                return data
 
     def format_tags(self, userRawTags: str, group: str):
         return "+".join(
@@ -213,7 +210,6 @@ class RandomPostPlugin(Star):
         )
 
     def get_api_url(self, tags: str):
-        logger.info(f"正在合成url：{tags}")
         return merge_params(self.BASE_URL, {"tags": tags})
 
     def get_user_constant_tags(self, group: str) -> list[str]:
