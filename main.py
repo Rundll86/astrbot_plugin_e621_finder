@@ -195,22 +195,23 @@ class RandomPostPlugin(Star):
         return "+".join(
             map(
                 lambda x: x.replace(" ", "_"),
-                self.compose_final_tags(userRawTags.split(self.TAG_SEPARATOR), group),
+                self.compose_total_tags(userRawTags.split(self.TAG_SEPARATOR), group),
             )
         )
 
-    def compose_final_tags(self, userTags: list[str], group: str) -> list[str]:
+    def compose_total_tags(self, userTags: list[str], group: str) -> list[str]:
         return (
             filter_empty_string(userTags)
             + self.CONSTANT_TAGS
             + (
                 []
-                if self.get_current_rating == "all"
+                if self.get_current_rating(group) == "all"
                 else [f"rating:{self.get_current_rating(group)}"]
             )
         )
 
     def get_api_url(self, tags: str):
+        logger.info(f"正在合成url：{tags}")
         return merge_params(self.BASE_URL, {"tags": tags})
 
     def get_user_constant_tags(self, group: str) -> list[str]:
