@@ -1,7 +1,7 @@
-from unittest import async_case
+
+import httpx
 
 import astrbot.api.message_components as Comp
-import httpx
 from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star, register
