@@ -90,7 +90,6 @@ class RandomPostPlugin(Star):
         else:
             yield event.plain_result("无效分级标签。")
 
-    @filter.command("rating", desc="查看当前分级")
     @rating.command("look", desc="查看当前分级")
     def look_rating(self, event: AstrMessageEvent):
         if self.get_current_rating(event.get_group_id()) == "all":
@@ -99,6 +98,11 @@ class RandomPostPlugin(Star):
             yield event.plain_result(
                 f"当前分级为：{RATING_LEVEL[self.get_current_rating(event.get_group_id())]}"
             )
+
+    @rating.command("clear", desc="清除分级限制")
+    def clear_rating(self, event: AstrMessageEvent):
+        self.set_current_rating(event.get_group_id(), "all")
+        yield event.plain_result("已取消分级限制。")
 
     @filter.llm_tool("search_random_image")
     async def get_random_image(self, event: AstrMessageEvent, tags: list[str]):
