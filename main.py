@@ -1,4 +1,3 @@
-
 import httpx
 
 import astrbot.api.message_components as Comp
@@ -18,7 +17,6 @@ from .utils import (
 )
 
 
-@register("Random Post", "陨落基围虾", "随机获取某插画网站上的图片", "1.0.0")
 class RandomPostPlugin(Star):
 
     CONSTANT_TAGS: list[str] = []
