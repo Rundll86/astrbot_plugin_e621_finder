@@ -50,12 +50,12 @@ class RandomPostPlugin(Star):
         },
         desc="从某插画网站获取一张随机图",
     )
-    async def execute_random_post(self, event: AstrMessageEvent, tags: str = ""):
+    async def execute_random_post(self, event: AstrMessageEvent, tags: str):
         yield event.plain_result(
-            f"正在获取随机图：{self.get_api_url(self.format_tags(tags))}"
+            f"正在获取随机图：{self.get_api_url(self.format_tags(tags, event.get_group_id()))}"
         )
         try:
-            post = await self.fetch_post(self.format_tags(tags))
+            post = await self.fetch_post(self.format_tags(tags, event.get_group_id()))
         except httpx.RequestError:
             yield event.plain_result("无法请求API，可能是服务端网络问题。")
             return
@@ -113,7 +113,9 @@ class RandomPostPlugin(Star):
         Args:
             tags(array[string]): The label content of the random graph must consist of all-English keywords. If it is a anime character name, use the official translation.
         """
-        tagsProcessed = self.format_tags(self.TAG_SEPARATOR.join(tags))
+        tagsProcessed = self.format_tags(
+            self.TAG_SEPARATOR.join(tags), event.get_group_id()
+        )
         post = await self.fetch_post(tagsProcessed)
         await event.send(
             MessageChain(chain=[Comp.Plain(f"正在使用标签搜索随机图：{tagsProcessed}")])
@@ -189,22 +191,22 @@ class RandomPostPlugin(Star):
         else:
             return None
 
-    def format_tags(self, userRawTags: str):
+    def format_tags(self, userRawTags: str, group: str):
         return "+".join(
             map(
                 lambda x: x.replace(" ", "_"),
-                self.compose_final_tags(userRawTags.split(self.TAG_SEPARATOR)),
+                self.compose_final_tags(userRawTags.split(self.TAG_SEPARATOR), group),
             )
         )
 
-    def compose_final_tags(self, userTags: list[str]) -> list[str]:
+    def compose_final_tags(self, userTags: list[str], group: str) -> list[str]:
         return (
             filter_empty_string(userTags)
             + self.CONSTANT_TAGS
             + (
                 []
                 if self.get_current_rating == "all"
-                else [f"rating:{self.get_current_rating}"]
+                else [f"rating:{self.get_current_rating(group)}"]
             )
         )
 
