@@ -90,6 +90,7 @@ class RandomPostPlugin(Star):
         else:
             yield event.plain_result("无效分级标签。")
 
+    @filter.command("rating", desc="查看当前分级")
     @rating.command("look", desc="查看当前分级")
     def look_rating(self, event: AstrMessageEvent):
         if self.get_current_rating(event.get_group_id()) == "all":
