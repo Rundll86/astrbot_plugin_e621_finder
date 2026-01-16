@@ -113,9 +113,7 @@ class RandomPostPlugin(Star):
         Args:
             tags(array[string]): The label content of the random graph must consist of all-English keywords. If it is a anime character name, use the official translation.
         """
-        tagsProcessed = self.format_tags(
-            "+".join(map(lambda x: x.replace(" ", "_"), tags))
-        )
+        tagsProcessed = self.format_tags(",".join(tags))
         post = await self.fetch_post(tagsProcessed)
         await event.send(
             MessageChain(chain=[Comp.Plain(f"正在使用标签搜索随机图：{tagsProcessed}")])
