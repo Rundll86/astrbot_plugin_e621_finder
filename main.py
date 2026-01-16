@@ -194,10 +194,12 @@ class RandomPostPlugin(Star):
 
     def format_tags(self, userRawTags: str, group: str):
         return "+".join(
-            map(
-                lambda x: x.replace(" ", "_"),
-                self.compose_total_tags(userRawTags.split(self.TAG_SEPARATOR), group),
-            )
+            [
+                x.replace(" ", "_")
+                for x in self.compose_total_tags(
+                    userRawTags.split(self.TAG_SEPARATOR), group
+                )
+            ]
         )
 
     def compose_total_tags(self, userTags: list[str], group: str) -> list[str]:

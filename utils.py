@@ -14,7 +14,7 @@ K = TypeVar("K")
 
 
 def format_tags(tags: list[str]):
-    return "+".join(map(lambda x: x.replace(" ", "_"), tags))
+    return "+".join([x.replace(" ", "_") for x in tags])
 
 
 def format_post(post: dict):
@@ -36,10 +36,7 @@ def filter_empty_string(array: list[T]) -> list[T]:
 
 def compose_rating_map(separator: str = ",\n"):
     return separator.join(
-        map(
-            lambda key: f"[{key.upper()}]{RATING_LEVEL[key][1:]}",
-            RATING_LEVEL,
-        )
+        [f"[{key.upper()}]{RATING_LEVEL[key][1:]}" for key in RATING_LEVEL]
     )
 
 
