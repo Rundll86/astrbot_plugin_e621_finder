@@ -1,3 +1,5 @@
+from unittest import async_case
+
 import astrbot.api.message_components as Comp
 import httpx
 from astrbot.api import logger
@@ -69,12 +71,15 @@ class RandomPostPlugin(Star):
         logger.info(post)
         yield event.chain_result(format_post(post))
 
-    # 受不了了，指令组一直有bug，改为纯指令吧💔
-    @filter.command("list-rating", desc="列出所有分级")
+    @filter.command_group("rating", desc="分级相关指令")
+    def rating(self):
+        pass
+
+    @rating.command("list", desc="列出所有分级")
     async def list_rating(self, event: AstrMessageEvent):
         yield event.plain_result(f"{compose_rating_map()}\n\nall: 允许所有分级")
 
-    @filter.command("set-rating", desc="设置当前分级")
+    @rating.command("set", desc="设置当前分级")
     async def set_rating(
         self,
         event: AstrMessageEvent,
@@ -89,8 +94,8 @@ class RandomPostPlugin(Star):
         else:
             yield event.plain_result("无效分级标签。")
 
-    @filter.command("look-rating", desc="查看当前分级", alias={"rating"})
-    def look_rating(self, event: AstrMessageEvent):
+    @rating.command("look", desc="查看当前分级")
+    async def look_rating(self, event: AstrMessageEvent):
         if self.get_current_rating(event.get_group_id()) == "all":
             yield event.plain_result("当前无分级限制。")
         else:
@@ -98,8 +103,8 @@ class RandomPostPlugin(Star):
                 f"当前分级为：{RATING_LEVEL[self.get_current_rating(event.get_group_id())]}"
             )
 
-    @filter.command("clear-rating", desc="清除分级限制")
-    def clear_rating(self, event: AstrMessageEvent):
+    @rating.command("clear", desc="清除分级限制")
+    async def clear_rating(self, event: AstrMessageEvent):
         self.set_current_rating(event.get_group_id(), "all")
         yield event.plain_result("已取消分级限制。")
 
