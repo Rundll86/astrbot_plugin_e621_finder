@@ -15,6 +15,8 @@ from .utils import (
     write_group_data,
 )
 
+#
+
 
 @register("Random Post", "陨落基围虾", "随机获取某插画网站上的图片", "1.0.0")
 class RandomPostPlugin(Star):
