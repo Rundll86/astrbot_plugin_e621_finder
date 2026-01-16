@@ -10,5 +10,11 @@
         "hint": "接口的基础URL地址。",
         "type": "string",
         "default": "https://e621.net/random/posts.json"
+    },
+    "tag_separator": {
+        "description": "关键词分隔符",
+        "hint": "用户输入标签时使用此字符进行分割，用于解析请求API的参数。",
+        "type": "string",
+        "default": ","
     }
 }

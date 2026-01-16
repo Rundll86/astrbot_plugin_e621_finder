@@ -15,8 +15,6 @@ from .utils import (
     write_group_data,
 )
 
-#
-
 
 @register("Random Post", "陨落基围虾", "随机获取某插画网站上的图片", "1.0.0")
 class RandomPostPlugin(Star):
@@ -25,12 +23,14 @@ class RandomPostPlugin(Star):
 
     USER_AGENT: str = ""
     BASE_URL: str = ""
+    TAG_SEPARATOR: str = ""
 
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
         self.client = httpx.AsyncClient()
         self.USER_AGENT = config["user_agent"]
         self.BASE_URL = config["base_url"]
+        self.TAG_SEPARATOR = config["tag_separator"]
         create_data_path()
 
     @filter.command(
@@ -113,7 +113,7 @@ class RandomPostPlugin(Star):
         Args:
             tags(array[string]): The label content of the random graph must consist of all-English keywords. If it is a anime character name, use the official translation.
         """
-        tagsProcessed = self.format_tags(",".join(tags))
+        tagsProcessed = self.format_tags(self.TAG_SEPARATOR.join(tags))
         post = await self.fetch_post(tagsProcessed)
         await event.send(
             MessageChain(chain=[Comp.Plain(f"正在使用标签搜索随机图：{tagsProcessed}")])
@@ -167,7 +167,9 @@ class RandomPostPlugin(Star):
 
     @constants.command("get", alias={"?"}, desc="查看当前恒标签列表")
     async def get_constants(self, event: AstrMessageEvent):
-        result = ",".join(self.get_user_constant_tags(event.get_group_id()))
+        result = self.TAG_SEPARATOR.join(
+            self.get_user_constant_tags(event.get_group_id())
+        )
         yield event.plain_result(result if result else "当前没有任何恒标签。")
 
     async def fetch_post(self, tags: str) -> dict | None:
@@ -191,7 +193,7 @@ class RandomPostPlugin(Star):
         return "+".join(
             map(
                 lambda x: x.replace(" ", "_"),
-                self.compose_final_tags(userRawTags.split(",")),
+                self.compose_final_tags(userRawTags.split(self.TAG_SEPARATOR)),
             )
         )
 
