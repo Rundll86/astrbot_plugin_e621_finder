@@ -1,6 +1,7 @@
+from urllib.parse import urljoin
+
 import httpx
 
-import astrbot.api.message_components as Comp
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star
 
@@ -43,10 +44,8 @@ class RandomPostPlugin(Star):
         },
         desc="从某插画网站获取一张随机图",
     )
-    async def execute_random_post(self, event: AstrMessageEvent, tags: str):
-        yield event.plain_result(
-            f"正在获取随机图：{self.get_api_url(self.format_tags(tags, event.get_group_id()))}"
-        )
+    async def command_random_post(self, event: AstrMessageEvent, tags: str):
+        yield self.tip_fetching_image(event, tags)
         try:
             post = await self.fetch_random_post(
                 self.format_tags(tags, event.get_group_id())
@@ -62,6 +61,10 @@ class RandomPostPlugin(Star):
             yield event.plain_result("你的运气太好了，搜到的帖子刚好没带图。")
             return
         yield event.chain_result(format_post(post))
+
+    @filter.command("fetch-post", alias={"fetch", "post", "get", "查看", "view"})
+    async def command_fetch_post(self, event: AstrMessageEvent, id: int):
+        pass
 
     @filter.command_group("rating", desc="分级相关指令")
     def rating(self):
@@ -107,12 +110,8 @@ class RandomPostPlugin(Star):
         Args:
             tags(array[string]): The label content of the random graph must consist of all-English keywords. If it is a anime character name, use the official translation.
         """
-        tagsProcessed = self.format_tags(
-            self.TAG_SEPARATOR.join(tags), event.get_group_id()
-        )
-        post = await self.fetch_random_post(tagsProcessed)
-        await event.send(
-            MessageChain(chain=[Comp.Plain(f"正在使用标签搜索随机图：{tagsProcessed}")])
+        post = await self.fetch_random_post(
+            self.format_tags(self.TAG_SEPARATOR.join(tags), event.get_group_id())
         )
         if post:
             await event.send(MessageChain(chain=format_post(post)))
@@ -168,8 +167,12 @@ class RandomPostPlugin(Star):
         )
         yield event.plain_result(result if result else "当前没有任何恒标签。")
 
-    async def fetch_random_post(self, tags: str) -> dict | None:
-        url = self.get_api_url(tags)
+    def tip_fetching_image(self, event: AstrMessageEvent, tags: str):
+        return event.plain_result(
+            f"正在获取随机图：{self.get_url_random_post(self.format_tags(tags, event.get_group_id()))}"
+        )
+
+    async def fetch_api(self, url: str):
         response = await self.client.get(
             url,
             headers={
@@ -185,6 +188,18 @@ class RandomPostPlugin(Star):
             data: dict = response.json()
             if data.get("success", True):
                 return data
+
+    def get_url_random_post(self, tags: str):
+        return self.join_api("posts/random.json", {"tags": tags})
+
+    async def fetch_random_post(self, tags: str) -> dict | None:
+        return await self.fetch_api(self.get_url_random_post(tags))
+
+    def get_url_exact_post(self, id: int):
+        return self.join_api(f"posts/{id}.json")
+
+    async def fetch_post_by_id(self, id: int):
+        return await self.fetch_api(self.get_url_exact_post(id))
 
     def format_tags(self, userRawTags: str, group: str):
         return "+".join(
@@ -207,8 +222,8 @@ class RandomPostPlugin(Star):
             )
         )
 
-    def get_api_url(self, tags: str):
-        return merge_params(self.BASE_URL, {"tags": tags})
+    def join_api(self, child: str, params: dict = {}):
+        return merge_params(urljoin(self.BASE_URL, child), params)
 
     def get_user_constant_tags(self, group: str) -> list[str]:
         return read_group_data(group)["constants"]
