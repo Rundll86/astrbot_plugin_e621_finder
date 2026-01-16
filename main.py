@@ -1,9 +1,8 @@
 import httpx
 
 import astrbot.api.message_components as Comp
-from astrbot.api import logger
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
-from astrbot.api.star import Context, Star, register
+from astrbot.api.star import Context, Star
 
 from .constants import RATING_LEVEL
 from .utils import (
@@ -17,7 +16,6 @@ from .utils import (
 
 
 class RandomPostPlugin(Star):
-
     CONSTANT_TAGS: list[str] = []
 
     USER_AGENT: str = ""
@@ -183,7 +181,10 @@ class RandomPostPlugin(Star):
                 )
             },
         )
-        if response.status_code == 200:
+        if (
+            response.status_code == 200
+            and response.headers["Content-Type"] == "application/json"
+        ):
             data: dict = response.json()
             if data.get("success", True):
                 return data

@@ -1,5 +1,3 @@
-import os
-
 from astrbot.api.star import StarTools
 
 RATING_LEVEL: dict[str, str] = {
