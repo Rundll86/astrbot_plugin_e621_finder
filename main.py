@@ -89,7 +89,7 @@ class RandomPostPlugin(Star):
 
     @filter.llm_tool("view_post")
     async def get_exact_image(self, event: AstrMessageEvent, id: int):
-        """给用户展示一个已知帖子
+        """给用户展示一个已知帖子，如果用户提供了类似ID的东西就调用这个工具，
 
         Args:
             id(number): The known post ID.
