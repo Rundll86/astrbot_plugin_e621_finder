@@ -1,6 +1,5 @@
 import json
 import os
-import re
 from typing import TypeVar
 from urllib.parse import unquote
 
@@ -9,6 +8,7 @@ import httpx
 import astrbot.api.message_components as Comp
 
 from .constants import INITIAL_GROUP_DATA, PLUGIN_DATA_PATH, RATING_LEVEL
+from .parser import render_template
 
 T = TypeVar("T")
 K = TypeVar("K")
@@ -22,7 +22,15 @@ def format_post(post: dict, template: str) -> list[Comp.BaseMessageComponent]:
     file_url = post.get("file_url")
     return [
         Comp.Image.fromURL(file_url) if file_url else Comp.Plain("[此帖子不带图]\n"),
-        Comp.Plain(render_template(template, post)),
+        Comp.Plain(
+            render_template(
+                template,
+                post
+                | {
+                    "RATING": RATING_LEVEL[post["rating"]],
+                },
+            )
+        ),
     ]
 
 
@@ -61,23 +69,3 @@ def write_group_data(group: str, key: str, value: object) -> dict:
     data[key] = value
     json.dump(data, open_group_file(group, "w"), ensure_ascii=False)
     return data
-
-
-def render_template(template: str, data: dict) -> str:
-    def replace_match(match: re.Match[str]):
-        path_str = match.group(1)
-        keys = path_str.split(".")
-        current = data
-        try:
-            for key in keys:
-                if isinstance(current, dict):
-                    current = current[key]
-                elif isinstance(current, list):
-                    current = current[int(key)]
-                else:
-                    return match.group(0)
-            return str(current)
-        except (KeyError, IndexError, ValueError, TypeError):
-            return match.group(0)
-
-    return re.compile(r"\{([^{}]+)\}").sub(replace_match, template)
