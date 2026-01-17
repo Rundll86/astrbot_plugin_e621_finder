@@ -1,4 +1,5 @@
 from urllib.parse import urljoin
+from venv import logger
 
 import httpx
 
@@ -189,6 +190,7 @@ class RandomPostPlugin(Star):
                     )
                 },
             )
+            logger.info(response.headers["Content-Type"])
             if (
                 response.status_code == 200
                 and response.headers["Content-Type"] == "application/json"
