@@ -190,11 +190,7 @@ class RandomPostPlugin(Star):
                     )
                 },
             )
-            logger.info(response.headers["Content-Type"])
-            if (
-                response.status_code == 200
-                and response.headers["Content-Type"] == "application/json"
-            ):
+            if response.status_code == 200:
                 data: dict = response.json()
                 if data.get("success", True):
                     return data
