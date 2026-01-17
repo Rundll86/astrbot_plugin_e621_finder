@@ -30,7 +30,9 @@ def format_post(
         file: dict = post.get("file", {})
         file_url = file.get("url")
     return [
-        Comp.Image.fromURL(file_url) if file_url else Comp.Plain("[此帖子不带图]\n"),
+        Comp.Image.fromURL(file_url)
+        if file_url
+        else Comp.Image.fromFileSystem("tip.png"),
         Comp.Plain(
             render_template(
                 f"\n{template}",
