@@ -79,6 +79,26 @@ class RandomPostPlugin(Star):
             post = await self.fetch_random_post(
                 self.format_tags(self.TAG_SEPARATOR.join(tags), event.get_group_id())
             )
+            await event.send(
+                MessageChain(chain=format_post(post, "random", self.POST_TEMPLATE))
+            )
+            return f"帖子数据：{post}"
+        except Exception as e:
+            await event.send(MessageChain(chain=[Comp.Plain(str(e))]))
+            return str(e)
+
+    @filter.llm_tool("view_post")
+    async def get_exact_image(self, event: AstrMessageEvent, id: int):
+        """给用户展示一个已知帖子
+
+        Args:
+            id(number): The known post ID.
+        """
+        try:
+            post = await self.fetch_post_by_id(id)
+            await event.send(
+                MessageChain(chain=format_post(post, "post", self.POST_TEMPLATE))
+            )
             return f"帖子数据：{post}"
         except Exception as e:
             await event.send(MessageChain(chain=[Comp.Plain(str(e))]))
