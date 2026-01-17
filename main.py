@@ -57,7 +57,7 @@ class RandomPostPlugin(Star):
         if isinstance(post, Exception):
             yield event.plain_result(str(post))
         else:
-            yield event.chain_result(format_post(post, self.POST_TEMPLATE))
+            yield event.chain_result(format_post(post, "random", self.POST_TEMPLATE))
 
     @filter.command("fetch-post", alias={"fetch", "post", "get", "查看", "view"})
     async def command_fetch_post(self, event: AstrMessageEvent, id: int):
@@ -66,7 +66,7 @@ class RandomPostPlugin(Star):
         if isinstance(post, Exception):
             yield event.plain_result(str(post))
         else:
-            yield event.chain_result(format_post(post, self.POST_TEMPLATE))
+            yield event.chain_result(format_post(post, "post", self.POST_TEMPLATE))
 
     @filter.llm_tool("search_random_image")
     async def get_random_image(self, event: AstrMessageEvent, tags: list[str]):

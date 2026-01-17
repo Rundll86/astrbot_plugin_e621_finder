@@ -1,6 +1,6 @@
 import json
 import os
-from typing import TypeVar
+from typing import Literal, TypeVar
 from urllib.parse import unquote
 
 import httpx
@@ -18,13 +18,21 @@ def format_tags(tags: list[str]):
     return "+".join([x.replace(" ", "_") for x in tags])
 
 
-def format_post(post: dict, template: str) -> list[Comp.BaseMessageComponent]:
-    file_url = post.get("file_url")
+def format_post(
+    post: dict,
+    type: Literal["random"] | Literal["post"],
+    template: str,
+) -> list[Comp.BaseMessageComponent]:
+    if type == "random":
+        file_url = post.get("file_url")
+    elif type == "post":
+        file: dict = post.get("file", {})
+        file_url = file.get("url")
     return [
         Comp.Image.fromURL(file_url) if file_url else Comp.Plain("[此帖子不带图]\n"),
         Comp.Plain(
             render_template(
-                template,
+                f"\n{template}",
                 post
                 | {
                     "RATING": RATING_LEVEL[post["rating"]],
