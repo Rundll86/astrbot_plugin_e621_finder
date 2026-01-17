@@ -1,5 +1,5 @@
 name: astrbot_plugin_e621_finder
-version: v2.3.7
+version: v2.4.0
 display_name: 更好的 随机图管理&抓取
 desc: 从e621获取随机图，支持NSFW内容！！！请谨慎使用。
 author: 陨落基围虾
