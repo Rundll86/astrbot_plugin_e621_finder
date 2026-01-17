@@ -32,7 +32,9 @@ def format_post(
     return [
         Comp.Image.fromURL(file_url)
         if file_url
-        else Comp.Image.fromFileSystem("tip.png"),
+        else Comp.Image.fromFileSystem(
+            os.path.join(os.path.dirname(__file__), "tip.png")
+        ),
         Comp.Plain(
             render_template(
                 f"\n{template}",
