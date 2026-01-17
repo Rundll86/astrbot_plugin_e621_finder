@@ -51,22 +51,22 @@ class RandomPostPlugin(Star):
     )
     async def command_random_post(self, event: AstrMessageEvent, tags: str):
         yield self.tip_fetching_random_image(event, tags)
-        post = await self.fetch_random_post(
-            self.format_tags(tags, event.get_group_id())
-        )
-        if isinstance(post, Exception):
-            yield event.plain_result(str(post))
-        else:
+        try:
+            post = await self.fetch_random_post(
+                self.format_tags(tags, event.get_group_id())
+            )
             yield event.chain_result(format_post(post, "random", self.POST_TEMPLATE))
+        except Exception as e:
+            yield event.plain_result(str(e))
 
     @filter.command("fetch-post", alias={"fetch", "post", "get", "查看", "view"})
     async def command_fetch_post(self, event: AstrMessageEvent, id: int):
         yield self.tip_fetching_exact_image(event, id)
-        post = await self.fetch_post_by_id(id)
-        if isinstance(post, Exception):
-            yield event.plain_result(str(post))
-        else:
+        try:
+            post = await self.fetch_post_by_id(id)
             yield event.chain_result(format_post(post, "post", self.POST_TEMPLATE))
+        except Exception as e:
+            yield event.plain_result(str(e))
 
     @filter.llm_tool("search_random_image")
     async def get_random_image(self, event: AstrMessageEvent, tags: list[str]):
@@ -75,14 +75,14 @@ class RandomPostPlugin(Star):
         Args:
             tags(array[string]): The label content of the random graph must consist of all-English keywords. If it is a anime character name, use the official translation.
         """
-        post = await self.fetch_random_post(
-            self.format_tags(self.TAG_SEPARATOR.join(tags), event.get_group_id())
-        )
-        if isinstance(post, Exception):
-            await event.send(MessageChain(chain=[Comp.Plain(str(post))]))
-            return str(post)
-        else:
+        try:
+            post = await self.fetch_random_post(
+                self.format_tags(self.TAG_SEPARATOR.join(tags), event.get_group_id())
+            )
             return f"帖子数据：{post}"
+        except Exception as e:
+            await event.send(MessageChain(chain=[Comp.Plain(str(e))]))
+            return str(e)
 
     # region 分级
     @filter.command_group("rating", desc="分级相关指令")
@@ -180,7 +180,7 @@ class RandomPostPlugin(Star):
         return event.plain_result(f"正在获取帖子#{id}：{self.get_url_exact_post(id)}")
 
     # region 请求&URL合成
-    async def fetch_api(self, url: str) -> dict | Exception:
+    async def fetch_api(self, url: str) -> dict:
         try:
             response = await self.client.get(
                 url,
@@ -204,9 +204,7 @@ class RandomPostPlugin(Star):
                     f"请求失败，来自API的响应无效，状态码：{response.status_code}"
                 )
         except httpx.RequestError:
-            return Exception("请求失败，服务端网络问题。")
-        except ValueError as e:
-            return e
+            raise Exception("请求失败，服务端网络问题。")
 
     def get_url_random_post(self, tags: str):
         return self.join_api("posts/random.json", {"tags": tags})
