@@ -1,5 +1,5 @@
+from json import JSONDecodeError
 from urllib.parse import urljoin
-from venv import logger
 
 import httpx
 
@@ -191,11 +191,14 @@ class RandomPostPlugin(Star):
                 },
             )
             if response.status_code == 200:
-                data: dict = response.json()
-                if data.get("success", True):
-                    return data
-                else:
-                    raise ValueError("未搜索到任何帖子。")
+                try:
+                    data: dict = response.json()
+                    if data.get("success", True):
+                        return data
+                    else:
+                        raise ValueError("未搜索到任何帖子。")
+                except JSONDecodeError:
+                    raise ValueError("请求失败，API未返回帖子数据。")
             else:
                 raise ValueError(
                     f"请求失败，来自API的响应无效，状态码：{response.status_code}"
