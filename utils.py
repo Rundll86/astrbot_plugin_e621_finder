@@ -61,19 +61,20 @@ def get_group_data_path(group: str) -> str:
 
 
 def open_group_file(group: str, mode: str):
-    with open(get_group_data_path(group), mode, encoding="utf8") as file:
-        return file
+    return open(get_group_data_path(group), mode, encoding="utf8")
 
 
 def read_group_data(group: str) -> dict:
     path = get_group_data_path(group)
     if not os.path.exists(path):
         return INITIAL_GROUP_DATA  # 路径不存在的话就说明这个群第一次存取数据，肯定是写，直接返回默认值
-    return json.load(open_group_file(group, "r"))
+    with open_group_file(group, "r") as file:
+        return json.load(file)
 
 
 def write_group_data(group: str, key: str, value: object) -> dict:
     data = read_group_data(group)
     data[key] = value
-    json.dump(data, open_group_file(group, "w"), ensure_ascii=False)
-    return data
+    with open_group_file(group, "w") as file:
+        json.dump(data, file, ensure_ascii=False)
+        return data
