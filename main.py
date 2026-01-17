@@ -194,7 +194,7 @@ class RandomPostPlugin(Star):
                 try:
                     data: dict = response.json()
                     if data.get("success", True):
-                        return data
+                        return data.get("post", data)
                     else:
                         raise ValueError("未搜索到任何帖子。")
                 except JSONDecodeError:
