@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from typing import Literal, TypeVar
@@ -56,8 +57,8 @@ def compose_rating_map(separator: str = ",\n"):
     )
 
 
-def get_group_data_path(group: str) -> str:
-    return os.path.join(PLUGIN_DATA_PATH, f"{group}.json")
+def get_group_data_path(group: str):
+    return PLUGIN_DATA_PATH / f"{group}.json"
 
 
 def open_group_file(group: str, mode: str):
@@ -67,7 +68,8 @@ def open_group_file(group: str, mode: str):
 def read_group_data(group: str) -> dict:
     path = get_group_data_path(group)
     if not os.path.exists(path):
-        return INITIAL_GROUP_DATA  # 路径不存在的话就说明这个群第一次存取数据，肯定是写，直接返回默认值
+        # 路径不存在的话就说明这个群第一次存取数据，肯定是写，直接返回默认值
+        return copy.deepcopy(INITIAL_GROUP_DATA)
     with open_group_file(group, "r") as file:
         return json.load(file)
 
