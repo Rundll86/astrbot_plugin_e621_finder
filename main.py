@@ -190,7 +190,7 @@ class RandomPostPlugin(Star):
                     )
                 },
             )
-            if response.status_code == 200:
+            if response.status_code in [404, 200]:
                 try:
                     data: dict = response.json()
                     if data.get("success", True):
