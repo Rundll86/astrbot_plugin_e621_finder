@@ -20,7 +20,7 @@
     "post_template": {
         "description": "帖子格式化模板",
         "hint": "把帖子数据格式化成用户方便看的形式，可以使用占位符{classpath}，只需要是e621 OpenAPI规范内允许的键即可，额外提供一个{RATING}键，代表映射过的人类可读分级标签。",
-        "type": "string",
+        "type": "text",
         "default": "#{id} [❤️{score} ⭐{fav_count} 📻{comment_count}]（{RATING}）\n\n{description}"
     }
 }
