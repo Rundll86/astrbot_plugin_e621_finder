@@ -295,7 +295,7 @@ class RandomPostPlugin(Star):
         current_page = []
         for index in range(len(posts)):
             current_post = posts[index]
-            if index % count == 1:
+            if (index + 1) % count == 0:
                 if len(current_page) > 0:
                     pages.append(current_page)
                 current_page = []
