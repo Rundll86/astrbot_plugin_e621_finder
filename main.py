@@ -91,8 +91,11 @@ class RandomPostPlugin(Star):
                     )
                 ]
             )
-            for post in pages[page]:
-                yield event.chain_result(format_post(post, "post", self.POST_TEMPLATE))
+            for index in range(len(pages[page])):
+                post = pages[page][index]
+                yield event.chain_result(
+                    format_post(post, "post", self.POST_TEMPLATE, (index, count))
+                )
         except Exception as e:
             yield event.plain_result(str(e))
 
