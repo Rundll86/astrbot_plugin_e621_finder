@@ -77,7 +77,7 @@ class RandomPostPlugin(Star):
     ):
         if count < 1 or count > self.MAX_COUNT_POSTS or not count % 1 == 0:
             yield event.plain_result(
-                f"为防止刷屏，命题 count(0,{self.MAX_COUNT_POSTS}]∩Z 必须成立。"
+                f"为防止刷屏，命题 count∈(0,{self.MAX_COUNT_POSTS}]∩N* 必须成立。"
             )
             return
         tags = self.format_tags(tags, event.get_group_id())
