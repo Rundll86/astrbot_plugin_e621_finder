@@ -19,12 +19,14 @@ from .utils import (
 
 
 class RandomPostPlugin(Star):
+    # 插件不管怎么请求API都会有这里面的标签，可以用来硬编码强制筛选，防止一些莫名其妙bug
     CONSTANT_TAGS: list[str] = []
 
     USER_AGENT: str = ""
     BASE_URL: str = ""
     TAG_SEPARATOR: str = ""
     POST_TEMPLATE: str = ""
+    MAX_COUNT_POSTS: int = -1
 
     def __init__(self, context: Context, config: dict):
         super().__init__(context)
@@ -33,6 +35,7 @@ class RandomPostPlugin(Star):
         self.BASE_URL = config["base_url"]
         self.TAG_SEPARATOR = config["tag_separator"]
         self.POST_TEMPLATE = config["post_template"]
+        self.MAX_COUNT_POSTS = config["max_count_posts"]
 
     # region 命令&LLM工具
     @filter.command(
@@ -55,16 +58,33 @@ class RandomPostPlugin(Star):
             post = await self.fetch_random_post(
                 self.format_tags(tags, event.get_group_id())
             )
-            yield event.chain_result(format_post(post, "random", self.POST_TEMPLATE))
+            yield event.chain_result(format_post(post[0], "random", self.POST_TEMPLATE))
         except Exception as e:
             yield event.plain_result(str(e))
 
-    @filter.command("fetch-post", alias={"fetch", "post", "get", "查看", "view"})
+    @filter.command("fetch-post", alias={"fetch", "post", "查看", "view"})
     async def command_fetch_post(self, event: AstrMessageEvent, id: int):
         yield self.tip_fetching_exact_image(event, id)
         try:
             post = await self.fetch_post_by_id(id)
-            yield event.chain_result(format_post(post, "post", self.POST_TEMPLATE))
+            yield event.chain_result(format_post(post[0], "post", self.POST_TEMPLATE))
+        except Exception as e:
+            yield event.plain_result(str(e))
+
+    @filter.command("search-post", alias={"search", "find", "搜索", "查找"})
+    async def command_search_post(
+        self, event: AstrMessageEvent, tags: str, count: int, page: int = 1
+    ):
+        if page < 1 or page > self.MAX_COUNT_POSTS:
+            yield event.plain_result(
+                f"为防止刷屏，帖子数量必须在1~{self.MAX_COUNT_POSTS}之间。"
+            )
+            return
+        yield self.tip_searching_image(event, count, tags, page)
+        try:
+            posts = await self.search_post(count, tags, page)
+            for post in posts:
+                yield event.chain_result(format_post(post, "post", self.POST_TEMPLATE))
         except Exception as e:
             yield event.plain_result(str(e))
 
@@ -80,7 +100,7 @@ class RandomPostPlugin(Star):
                 self.format_tags(self.TAG_SEPARATOR.join(tags), event.get_group_id())
             )
             await event.send(
-                MessageChain(chain=format_post(post, "random", self.POST_TEMPLATE))
+                MessageChain(chain=format_post(post[0], "random", self.POST_TEMPLATE))
             )
             return f"帖子数据：{post}"
         except Exception as e:
@@ -97,7 +117,7 @@ class RandomPostPlugin(Star):
         try:
             post = await self.fetch_post_by_id(id)
             await event.send(
-                MessageChain(chain=format_post(post, "post", self.POST_TEMPLATE))
+                MessageChain(chain=format_post(post[0], "post", self.POST_TEMPLATE))
             )
             return f"帖子数据：{post}"
         except Exception as e:
@@ -191,6 +211,7 @@ class RandomPostPlugin(Star):
         )
         yield event.plain_result(result if result else "当前没有任何恒标签。")
 
+    # 发提示
     def tip_fetching_random_image(self, event: AstrMessageEvent, tags: str):
         return event.plain_result(
             f"正在获取随机图：{self.get_url_random_post(self.format_tags(tags, event.get_group_id()))}"
@@ -199,8 +220,32 @@ class RandomPostPlugin(Star):
     def tip_fetching_exact_image(self, event: AstrMessageEvent, id: int):
         return event.plain_result(f"正在获取帖子#{id}：{self.get_url_exact_post(id)}")
 
-    # region 请求&URL合成
-    async def fetch_api(self, url: str) -> dict:
+    def tip_searching_image(
+        self, event: AstrMessageEvent, count: int, tags: str, page: int
+    ):
+        return event.plain_result(
+            f"正在搜索符合{tags}标签的{count}条帖子：{self.get_url_search_post(count, tags, page)}"
+        )
+
+    # 合成一下apiurl
+    def get_url_random_post(self, tags: str):
+        return self.join_api("posts/random.json", {"tags": tags})
+
+    def get_url_exact_post(self, id: int):
+        return self.join_api(f"posts/{id}.json")
+
+    def get_url_search_post(self, count: int, tags: str, page: int):
+        return self.join_api(
+            "posts.json",
+            {
+                "tags": tags,
+                "limit": count,
+                "page": page,
+            },
+        )
+
+    # region 请求
+    async def fetch_api(self, url: str) -> list[dict]:
         try:
             response = await self.client.get(
                 url,
@@ -214,7 +259,8 @@ class RandomPostPlugin(Star):
                 try:
                     data: dict = response.json()
                     if data.get("success", True):
-                        return data.get("post", data)
+                        data = data.get("post", data.get("posts", data))
+                        return [data] if isinstance(data, dict) else data
                     else:
                         raise ValueError("未搜索到任何帖子。")
                 except JSONDecodeError:
@@ -226,17 +272,14 @@ class RandomPostPlugin(Star):
         except httpx.RequestError:
             raise Exception("请求失败，服务端网络问题。")
 
-    def get_url_random_post(self, tags: str):
-        return self.join_api("posts/random.json", {"tags": tags})
-
     async def fetch_random_post(self, tags: str):
         return await self.fetch_api(self.get_url_random_post(tags))
 
-    def get_url_exact_post(self, id: int):
-        return self.join_api(f"posts/{id}.json")
-
     async def fetch_post_by_id(self, id: int):
         return await self.fetch_api(self.get_url_exact_post(id))
+
+    async def search_post(self, count: int, tags: str, page: int):
+        return await self.fetch_api(self.get_url_search_post(count, tags, page))
 
     def format_tags(self, userRawTags: str, group: str):
         return "+".join(

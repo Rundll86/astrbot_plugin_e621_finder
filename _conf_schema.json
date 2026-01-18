@@ -22,5 +22,11 @@
         "hint": "把帖子数据格式化成用户方便看的形式，可以使用占位符{classpath}，只需要是e621 OpenAPI规范内允许的键即可，可以用 . 指定路径读取，使用 | 进行故障转移，额外提供一个RATING键，代表映射过的人类可读分级标签。",
         "type": "text",
         "default": "#{id} [❤️{score.total|score} ⭐{fav_count} 📻{comment_count}]（{RATING}）\n\n{description}"
+    },
+    "max_count_posts": {
+        "description": "展示帖子的最大数量",
+        "hint": "用户搜索帖子时最多可以选择展示多少帖子，超过后插件会报错提示用户。",
+        "type": "int",
+        "default": 10
     }
 }
