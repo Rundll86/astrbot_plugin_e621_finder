@@ -163,7 +163,6 @@ class RandomPostPlugin(Star):
             count_per_page(number): The count of posts per page.
             page_index(number): Which page to return to.
         """
-        page_index -= 1
         if (
             count_per_page < 1
             or count_per_page > self.MAX_COUNT_POSTS
@@ -175,7 +174,7 @@ class RandomPostPlugin(Star):
                 count_per_page,
                 self.format_tags(self.TAG_SEPARATOR.join(tags), event.get_group_id()),
             )
-            if page_index >= len(pages):
+            if page_index - 1 >= len(pages):
                 return f"这个标签下只搜到了{len(pages)}页帖子，请降低page_index的值或修改tags。"
             else:
                 result = ""
