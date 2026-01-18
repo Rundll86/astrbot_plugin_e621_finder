@@ -75,11 +75,12 @@ class RandomPostPlugin(Star):
     async def command_search_post(
         self, event: AstrMessageEvent, tags: str, count: int, page: int = 1
     ):
-        if page < 1 or page > self.MAX_COUNT_POSTS:
+        if count < 1 or count > self.MAX_COUNT_POSTS or not count % 1 == 0:
             yield event.plain_result(
-                f"为防止刷屏，帖子数量必须在1~{self.MAX_COUNT_POSTS}之间。"
+                f"为防止刷屏，命题 count(0,{self.MAX_COUNT_POSTS}]∩Z 必须成立。"
             )
             return
+        tags = self.format_tags(tags, event.get_group_id())
         yield self.tip_searching_image(event, count, tags, page)
         try:
             posts = await self.search_post(count, tags, page)
