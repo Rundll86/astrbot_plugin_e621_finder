@@ -298,6 +298,8 @@ class RandomPostPlugin(Star):
                     pages.append(current_page)
                 current_page = []
             current_page.append(current_post)
+        if len(current_page) > 0:
+            pages.append(current_page)
         return pages
 
     def format_tags(self, userRawTags: str, group: str):
