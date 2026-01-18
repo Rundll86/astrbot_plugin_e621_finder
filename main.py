@@ -265,7 +265,10 @@ class RandomPostPlugin(Star):
                     data: dict = response.json()
                     if data.get("success", True):
                         data = data.get("post", data.get("posts", data))
-                        return [data] if isinstance(data, dict) else data
+                        if len(data) == 0:
+                            raise ValueError("未搜索到任何帖子。")
+                        else:
+                            return [data] if isinstance(data, dict) else data
                     else:
                         raise ValueError("未搜索到任何帖子。")
                 except JSONDecodeError:
