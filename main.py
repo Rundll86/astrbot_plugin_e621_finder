@@ -184,6 +184,16 @@ class RandomPostPlugin(Star):
                 for index in range(len(pageData)):
                     post = pageData[index]
                     result += f"第{index + 1}条帖子：{post};\n"
+                    await event.send(
+                        MessageChain(
+                            chain=format_post(
+                                post,
+                                "post",
+                                self.POST_TEMPLATE,
+                                (index, min(count_per_page, len(pageData))),
+                            )
+                        )
+                    )
                 return result
         except Exception as e:
             return str(e)
