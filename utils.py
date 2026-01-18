@@ -23,13 +23,14 @@ def format_post(
     post: dict,
     type: Literal["random"] | Literal["post"],
     template: str,
+    page: tuple[int, int] | None = None,
 ) -> list[Comp.BaseMessageComponent]:
     if type == "random":
         file_url = post.get("file_url")
     elif type == "post":
         file: dict = post.get("file", {})
         file_url = file.get("url")
-    return [
+    result: list[Comp.BaseMessageComponent] = [
         Comp.Image.fromURL(file_url)
         if file_url
         else Comp.Image.fromFileSystem(
@@ -45,6 +46,14 @@ def format_post(
             )
         ),
     ]
+    if page:
+        result.insert(
+            0,
+            Comp.Plain(
+                f"当前在第({page[0]}/{page[1]})页，更改page参数的值可切换选页。"
+            ),
+        )
+    return result
 
 
 def merge_params(url: str, params: dict):
