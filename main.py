@@ -3,6 +3,7 @@ from urllib.parse import urljoin
 
 import httpx
 
+from astrbot.api import logger
 from astrbot.api import message_components as Comp
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star
@@ -78,17 +79,18 @@ class RandomPostPlugin(Star):
         page -= 1
         if count < 1 or count > self.MAX_COUNT_POSTS or not count % 1 == 0:
             yield event.plain_result(
-                f"为防止刷屏，命题 count∈(0,{self.MAX_COUNT_POSTS}]∩N* 必须成立。"
+                f"为防止刷屏，你必须让命题 {count}∈(0,{self.MAX_COUNT_POSTS}]∩N* 成立。"
             )
             return
         tags = self.format_tags(tags, event.get_group_id())
         yield self.tip_searching_image(event, tags)
         try:
             pages = await self.search_post(count, tags)
+            logger.info(pages)
             yield event.chain_result(
                 [
                     Comp.Plain(
-                        f"当前在第({page}/{len(pages)})页，更改page参数的值可切换选页。"
+                        f"当前在第({page + 1}/{len(pages)})页，更改page参数的值可切换选页。"
                     )
                 ]
             )
