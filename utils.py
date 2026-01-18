@@ -47,7 +47,7 @@ def format_post(
         ),
     ]
     if index:
-        result.insert(0, Comp.Plain(f"第({index[0] / index[1]})条帖子："))
+        result.insert(0, Comp.Plain(f"第({index[0] + 1}/{index[1]})条帖子："))
     return result
 
 
