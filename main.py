@@ -3,7 +3,7 @@ from urllib.parse import urljoin
 
 import httpx
 
-from astrbot.api import logger
+# from astrbot.api import logger
 from astrbot.api import message_components as Comp
 from astrbot.api.event import AstrMessageEvent, MessageChain, filter
 from astrbot.api.star import Context, Star
@@ -86,7 +86,6 @@ class RandomPostPlugin(Star):
         yield self.tip_searching_image(event, tags)
         try:
             pages = await self.search_post(count, tags)
-            logger.info(pages)
             if page >= len(pages):
                 yield event.plain_result(
                     f"这个标签下只搜到了{len(pages)}页帖子，请降低page的值或修改tags。"
@@ -176,7 +175,6 @@ class RandomPostPlugin(Star):
                 count_per_page,
                 self.format_tags(self.TAG_SEPARATOR.join(tags), event.get_group_id()),
             )
-            logger.info(pages)
             if page_index >= len(pages):
                 return f"这个标签下只搜到了{len(pages)}页帖子，请降低page_index的值或修改tags。"
             else:
