@@ -83,11 +83,16 @@ class RandomPostPlugin(Star):
         tags = self.format_tags(tags, event.get_group_id())
         yield self.tip_searching_image(event, tags)
         try:
-            posts = await self.search_post(count, tags)
-            for post in posts[page]:
-                yield event.chain_result(
-                    format_post(post, "post", self.POST_TEMPLATE, (page, len(posts)))
-                )
+            pages = await self.search_post(count, tags)
+            yield event.chain_result(
+                [
+                    Comp.Plain(
+                        f"当前在第({page}/{len(pages)})页，更改page参数的值可切换选页。"
+                    )
+                ]
+            )
+            for post in pages[page]:
+                yield event.chain_result(format_post(post, "post", self.POST_TEMPLATE))
         except Exception as e:
             yield event.plain_result(str(e))
 
