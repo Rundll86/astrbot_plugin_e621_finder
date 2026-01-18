@@ -151,7 +151,11 @@ class RandomPostPlugin(Star):
 
     @filter.llm_tool()
     async def search_posts(
-        self, event: AstrMessageEvent, tags: str, count_per_page: int, page_index: int
+        self,
+        event: AstrMessageEvent,
+        tags: list[str],
+        count_per_page: int,
+        page_index: int,
     ):
         """搜索指定数量的帖子，如果用户强调具体数量就用这个工具，否则使用“get_random_image”工具。
 
@@ -160,7 +164,32 @@ class RandomPostPlugin(Star):
             count_per_page(number): The count of posts per page.
             page_index(number): Which page to return to.
         """
-        pass
+        page_index -= 1
+        if (
+            count_per_page < 1
+            or count_per_page > self.MAX_COUNT_POSTS
+            or not count_per_page % 1 == 0
+        ):
+            return f"命题 count_per_page∈(0,{self.MAX_COUNT_POSTS}]∩N* 不成立，可能造成刷屏，请修改count_per_page的值。"
+        try:
+            pages = await self.search_post(
+                count_per_page,
+                self.format_tags(self.TAG_SEPARATOR.join(tags), event.get_group_id()),
+            )
+            logger.info(pages)
+            if page_index >= len(pages):
+                return f"这个标签下只搜到了{len(pages)}页帖子，请降低page_index的值或修改tags。"
+            else:
+                result = ""
+                pageData = pages[page_index]
+                if len(pageData) < count_per_page:
+                    result += f"这一页没有那么多帖子，只搜到了{len(pageData)}张。\n"
+                for index in range(len(pageData)):
+                    post = pageData[index]
+                    result += f"第{index + 1}条帖子：{post};\n"
+                return result
+        except Exception as e:
+            return str(e)
 
     # region 分级
     @filter.command_group("rating", desc="分级相关指令")
