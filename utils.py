@@ -4,6 +4,7 @@ import os
 from typing import Literal, TypeVar
 from urllib.parse import unquote
 
+import aiocqhttp
 import httpx
 
 import astrbot.api.message_components as Comp
@@ -30,12 +31,7 @@ def format_post(
     elif type == "post":
         file: dict = post.get("file", {})
         file_url = file.get("url")
-    result = [
-        Comp.Image.fromURL(file_url)
-        if file_url
-        else Comp.Image.fromFileSystem(
-            os.path.join(os.path.dirname(__file__), "tip.png")
-        ),
+    result: list[Comp.BaseMessageComponent] = [
         Comp.Plain(
             render_template(
                 f"\n{template}",
@@ -46,6 +42,19 @@ def format_post(
             )
         ),
     ]
+    try:
+        result.insert(
+            0,
+            Comp.Image.fromURL(file_url)
+            if file_url
+            else Comp.Image.fromFileSystem(
+                os.path.join(os.path.dirname(__file__), "tip.png")
+            ),
+        )
+    except aiocqhttp.exceptions.NetworkError:
+        result = [
+            Comp.Plain(f"服务端下载图片失败，请使用view {post['id']}重新查看帖子。")
+        ]
     if index:
         result.insert(0, Comp.Plain(f"第({index[0] + 1}/{index[1]})条帖子："))
     return result
