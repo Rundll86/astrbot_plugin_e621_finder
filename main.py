@@ -75,6 +75,7 @@ class RandomPostPlugin(Star):
     async def command_search_post(
         self, event: AstrMessageEvent, tags: str, count: int, page: int = 1
     ):
+        page -= 1
         if count < 1 or count > self.MAX_COUNT_POSTS or not count % 1 == 0:
             yield event.plain_result(
                 f"为防止刷屏，命题 count∈(0,{self.MAX_COUNT_POSTS}]∩N* 必须成立。"
