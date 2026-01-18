@@ -87,24 +87,35 @@ class RandomPostPlugin(Star):
         try:
             pages = await self.search_post(count, tags)
             logger.info(pages)
-            yield event.chain_result(
-                [
-                    Comp.Plain(
-                        f"当前在第({page + 1}/{len(pages)})页，更改page参数的值可切换选页。"
-                    )
-                ]
-            )
-            for index in range(len(pages[page])):
-                post = pages[page][index]
-                yield event.chain_result(
-                    format_post(post, "post", self.POST_TEMPLATE, (index, count))
+            if page >= len(pages):
+                yield event.plain_result(
+                    f"这个标签下只搜到了{len(pages)}页帖子，请降低page的值或修改tags。"
                 )
+            else:
+                yield event.plain_result(
+                    f"当前在第({page + 1}/{len(pages)})页，更改page参数的值可切换选页。"
+                )
+                pageData = pages[page]
+                if len(pageData) < count:
+                    yield event.plain_result(
+                        f"这一页没有那么多帖子，只搜到了{len(pageData)}张。"
+                    )
+                for index in range(len(pageData)):
+                    post = pageData[index]
+                    yield event.chain_result(
+                        format_post(
+                            post,
+                            "post",
+                            self.POST_TEMPLATE,
+                            (index, min(count, len(pageData))),
+                        )
+                    )
         except Exception as e:
             yield event.plain_result(str(e))
 
-    @filter.llm_tool("search_random_image")
+    @filter.llm_tool()
     async def get_random_image(self, event: AstrMessageEvent, tags: list[str]):
-        """搜索或获取随机图
+        """搜索或获取随机图，如果用户强调【随机】就用这个工具，否则使用“search_posts”工具。
 
         Args:
             tags(array[string]): The label content of the random graph must consist of all-English keywords. If it is a anime character name, use the official translation.
@@ -121,9 +132,9 @@ class RandomPostPlugin(Star):
             await event.send(MessageChain(chain=[Comp.Plain(str(e))]))
             return str(e)
 
-    @filter.llm_tool("view_post")
-    async def get_exact_image(self, event: AstrMessageEvent, id: int):
-        """给用户展示一个已知帖子，如果用户提供了类似ID的东西就调用这个工具，
+    @filter.llm_tool()
+    async def view_post(self, event: AstrMessageEvent, id: int):
+        """给用户展示一个已知帖子，如果用户提供了类似ID的东西就调用这个工具。
 
         Args:
             id(number): The known post ID.
@@ -137,6 +148,19 @@ class RandomPostPlugin(Star):
         except Exception as e:
             await event.send(MessageChain(chain=[Comp.Plain(str(e))]))
             return str(e)
+
+    @filter.llm_tool()
+    async def search_posts(
+        self, event: AstrMessageEvent, tags: str, count_per_page: int, page_index: int
+    ):
+        """搜索指定数量的帖子，如果用户强调具体数量就用这个工具，否则使用“get_random_image”工具。
+
+        Args:
+            tags(array[string]): The label content of the random graph must consist of all-English keywords. If it is a anime character name, use the official translation.
+            count_per_page(number): The count of posts per page.
+            page_index(number): Which page to return to.
+        """
+        pass
 
     # region 分级
     @filter.command_group("rating", desc="分级相关指令")
