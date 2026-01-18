@@ -79,7 +79,7 @@ class RandomPostPlugin(Star):
         page -= 1
         if count < 1 or count > self.MAX_COUNT_POSTS or not count % 1 == 0:
             yield event.plain_result(
-                f"为防止刷屏，你必须让命题 {count}∈(0,{self.MAX_COUNT_POSTS}]∩N* 成立。"
+                f"命题 {count}∈(0,{self.MAX_COUNT_POSTS}]∩N* 不成立，可能造成刷屏，请修改count的值。"
             )
             return
         tags = self.format_tags(tags, event.get_group_id())
